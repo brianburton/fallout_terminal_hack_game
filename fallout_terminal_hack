@@ -1,0 +1,95 @@
+#!/usr/bin/env ruby
+
+require 'set'
+
+# Generate words
+# Loop
+  # display words (include likeness if tried)
+  # display tries remaining
+  # read word
+  # score word
+
+class Word
+  attr_reader :text, :likeness, :tried
+  attr_writer :tried
+
+  def initialize(text, likeness)
+    @text = text
+    @likeness = likeness
+    @tried = false
+  end
+
+  def is_password
+    return text.length == likeness
+  end
+
+  def <=>(other)
+      text <=> other
+  end
+
+  def to_s
+    "#{@text} (#{@likeness})"
+  end
+end
+
+class Game
+  attr_reader :word_length, :num_words, :max_tries, :num_tries, :words
+
+end
+
+class WordMap
+  def initialize
+    @words = Hash.new {|hash,key| hash[key] = Array.new}
+    File.open("/usr/share/dict/words", "r") do |f|
+      f.each do |line|
+        line = line.chomp.downcase
+        next unless line.length >= 4
+        next unless line.length <= 10
+        @words[line.length] << line
+      end
+    end
+  end
+
+  def likeness(pwd, other)
+    answer = 0
+    (0...pwd.length).each do |i|
+      answer += 1 if pwd[i] == other[i]
+    end
+    return answer
+  end
+
+  def random_words(length, num_words)
+    all_words = @words[length]
+    raise "insufficient words" if all_words.length < num_words
+    (1..100).each do |try_number|
+      answer = Set.new
+      pwd = nil
+      one_count = 0
+      while answer.length < num_words
+        word = all_words[rand(all_words.length)]
+        if pwd.nil?
+          pwd = word
+          answer << Word.new(word, length)
+        else
+          word_likeness = likeness(pwd, word)
+          next if word_likeness < 1 || word_likeness == length
+          if word_likeness == 1
+            next if one_count > length / 3
+            one_count += 1
+          end
+          answer << Word.new(word, word_likeness)
+        end
+      end
+      return answer.to_a.sort if answer.length == num_words
+    end
+    raise "unable to find enough words with non-zero likeness"
+  end
+end
+
+wm = WordMap.new
+(4..10).each do |length|
+  (5..10).each do |num_words|
+    puts "NEW: length=#{length} num_words=#{num_words}"
+    puts wm.random_words(length, num_words)
+  end
+end
