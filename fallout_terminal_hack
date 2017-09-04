@@ -31,7 +31,7 @@ class Word
   end
 
   def <=>(other)
-      text <=> other
+    text <=> other
   end
 
   def to_s
@@ -59,7 +59,7 @@ class WordList
   end
 
   def playable?
-    min_total = (0.5 + 0.5 * 0.5 * word_length) * length
+    min_total = (0.5 * 0.5 + 0.5 * 0.5 * word_length) * length
     total_likeness = @words.inject(0.0) { |s,w| s + w.likeness.to_f }
     return total_likeness >= min_total
   end
@@ -89,6 +89,36 @@ class WordMap
     load_file("words.txt")
   end
 
+  def random_words(length, num_words)
+    all_words = @words[length]
+    max_zeros = num_words / 4
+    raise "insufficient words" if all_words.length < num_words
+    r = Random.new
+    1.upto(1000000).each do |try_number|
+      answer = Set.new
+      pwd = nil
+      num_zeros = 0
+      while answer.length < num_words
+        word = all_words[r.rand(all_words.length)]
+        if pwd.nil?
+          pwd = word
+          answer << Word.new(word, length)
+        else
+          word_likeness = likeness(pwd, word)
+          if word_likeness == 0
+            next if num_zeros >= max_zeros
+            num_zeros += 1
+          end
+          next if word_likeness == length
+          answer << Word.new(word, word_likeness)
+        end
+      end
+      words = WordList.new(answer.to_a.shuffle)
+      return words if words.playable?
+    end
+    raise "unable to find enough words with non-zero likeness"
+  end
+
   def load_file(filename)
     File.open(filename, "r") do |f|
       f.each do |line|
@@ -99,34 +129,12 @@ class WordMap
       end
     end
   end
+  private :load_file
 
   def likeness(pwd, other)
     (0...pwd.length).count { |i| pwd[i] == other[i] }
   end
-
-  def random_words(length, num_words)
-    all_words = @words[length]
-    raise "insufficient words" if all_words.length < num_words
-    r = Random.new
-    1.upto(1000000).each do |try_number|
-      answer = Set.new
-      pwd = nil
-      while answer.length < num_words
-        word = all_words[r.rand(all_words.length)]
-        if pwd.nil?
-          pwd = word
-          answer << Word.new(word, length)
-        else
-          word_likeness = likeness(pwd, word)
-          next if word_likeness < 1 || word_likeness == length
-          answer << Word.new(word, word_likeness)
-        end
-      end
-      words = WordList.new(answer.to_a.shuffle)
-      return words if words.playable?
-    end
-    raise "unable to find enough words with non-zero likeness"
-  end
+  private :likeness
 end
 
 class GameMenu
@@ -159,7 +167,23 @@ class GameMenu
     print "\n"
   end
 
-  def map(c)
+  def read_choice
+    while true
+      remaining = MAX_TRIES - @words.tries
+      if remaining == 1
+        print "Last try: "
+      else
+        print "#{remaining} tries remaining: "
+      end
+      choice = STDIN.readline.chomp
+      if choice.length > 0
+        mapped = map_char(choice)
+        return mapped unless mapped.nil?
+      end
+    end
+  end
+
+  def map_char(c)
     return c if c == "r" || c == "q" || (c == "h" && @words.tries > 0)
     c = c.to_i
     choice = 1
@@ -171,22 +195,7 @@ class GameMenu
     end
     return nil
   end
-
-  def read_choice
-    while true
-      remaining = MAX_TRIES - @words.tries
-      if remaining == 1
-        print "Last try: "
-      else
-        print "#{remaining} tries remaining: "
-      end
-      choice = STDIN.readline.chomp
-      if choice.length > 0
-        mapped = map(choice)
-        return mapped unless mapped.nil?
-      end
-    end
-  end
+  private :map_char
 end
 
 class GameLoop
