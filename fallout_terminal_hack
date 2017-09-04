@@ -16,11 +16,15 @@ class Word
   def initialize(text, likeness)
     @text = text
     @likeness = likeness
-    @tried = false
+    @tried = true
   end
 
   def is_password
     return text.length == likeness
+  end
+
+  def length
+    return @text.length
   end
 
   def <=>(other)
@@ -28,7 +32,40 @@ class Word
   end
 
   def to_s
-    "#{@text} (#{@likeness})"
+    @tried ? "#{@text} (#{@likeness})" : @text
+  end
+end
+
+class WordList
+  attr_reader :words
+
+  def initialize(words)
+    @words = words
+  end
+
+  def word_length
+    @words[0].length
+  end
+
+  def length
+    @words.length
+  end
+
+  def playable?
+    above_half_length = (word_length + 1) / 2
+    above_half_count = 0
+    @words.each do |word|
+      above_half_count += 1 if word.likeness >= above_half_length
+    end
+    return above_half_count.to_f >= (length.to_f / 2.75)
+  end
+
+  def tries
+    @words.sum { |w| w.tried ? 1 : 0 }
+  end
+
+  def reset
+    @words.each { |w| w.tried = false }
   end
 end
 
@@ -40,7 +77,7 @@ end
 class WordMap
   def initialize
     @words = Hash.new {|hash,key| hash[key] = Array.new}
-    File.open("/usr/share/dict/words", "r") do |f|
+    File.open("words.txt", "r") do |f|
       f.each do |line|
         line = line.chomp.downcase
         next unless line.length >= 4
@@ -61,10 +98,9 @@ class WordMap
   def random_words(length, num_words)
     all_words = @words[length]
     raise "insufficient words" if all_words.length < num_words
-    (1..100).each do |try_number|
+    1.upto(1000000).each do |try_number|
       answer = Set.new
       pwd = nil
-      one_count = 0
       while answer.length < num_words
         word = all_words[rand(all_words.length)]
         if pwd.nil?
@@ -73,22 +109,78 @@ class WordMap
         else
           word_likeness = likeness(pwd, word)
           next if word_likeness < 1 || word_likeness == length
-          if word_likeness == 1
-            next if one_count > length / 3
-            one_count += 1
-          end
           answer << Word.new(word, word_likeness)
         end
       end
-      return answer.to_a.sort if answer.length == num_words
+      words = WordList.new(answer.to_a)
+      return answer.to_a.sort if words.words if words.playable?
     end
     raise "unable to find enough words with non-zero likeness"
   end
 end
 
+class GameMenu
+  attr_reader :words
+
+  def initialize(words)
+    @words = words
+  end
+
+  def print
+    choice = 1
+    @words.each do |word|
+      prefix = ""
+      if word.tried
+        prefix = "  "
+      else
+        prefix = "#{choice})"
+        choice += 1
+      end
+      STDIO.print "#{prefix} #{word}\n"
+    end
+    STDIO.print "r) RESTART\n"
+  end
+
+  def map(c)
+    return c if c == "r"
+    c = c.to_i
+    choice = 1
+    @words.each do |word|
+      unless word.tried
+        return word if c == choice
+        choice += 1
+      end
+    end
+    return nil
+  end
+
+  def read
+    while true
+      STDIO.print "#{4 - @words.tries} remaining: "
+      choice = STDIN.read_line.chomp
+      if choice.length > 0
+        mapped = map(choice)
+        return mapped unless mapped.nil?
+      end
+    end
+  end
+end
+
+class GameLoop
+  attr_reader :words
+
+  def initialize(words)
+    @words = words
+  end
+
+  def run
+    
+  end
+end
+
 wm = WordMap.new
-(4..10).each do |length|
-  (5..10).each do |num_words|
+(4..8).each do |length|
+  (5..12).each do |num_words|
     puts "NEW: length=#{length} num_words=#{num_words}"
     puts wm.random_words(length, num_words)
   end
