@@ -22,6 +22,17 @@ class Word
     return @text.length
   end
 
+  def likeness_to(other)
+    (0...@text.length).count { |i| @text[i] == other.text[i] }
+  end
+
+  def likeness_matches(others)
+    others.each do |w|
+      return false unless likeness_to(w) == w.likeness
+    end
+    return true
+  end
+
   def <=>(other)
       text <=> other
   end
@@ -73,13 +84,18 @@ class WordList
   def each
     @words.each { |w| yield w }
   end
+
+  def hints
+    already_tried = @words.select { |w| w.tried }
+    return Array.new if already_tried.empty?
+    return @words.select { |w| w.likeness_matches(already_tried) && !w.tried }
+  end
 end
 
 class WordMap
   def initialize
     @words = Hash.new {|hash,key| hash[key] = Array.new}
     load_file("words.txt")
-#    load_file("/usr/share/dict/words")
   end
 
   def load_file(filename)
@@ -141,12 +157,22 @@ class GameMenu
       end
       print "#{prefix} #{word}\n"
     end
+    print " h) hint\n" if @words.tries > 0
     print " r) reset\n"
     print " q) quit\n"
   end
 
+  def print_hints
+    print "\nThese are all the possible passwords:\n"
+    @words.hints.each { |w| puts w }
+    print "\n"
+  end
+
   def map(c)
     return c if c == "r" || c == "q"
+    if c == "h"
+      return @words.tries > 0 ? c : nil
+    end
     c = c.to_i
     choice = 1
     @words.each do |word|
@@ -194,10 +220,17 @@ class GameLoop
       elsif choice == "q"
         print "#{@words.password} was the password\n"
         return "quit"
+      elsif choice == "h"
+        menu.print_hints
       else
         if choice.password?
           print "Success! #{choice} is the password!\n"
-          return "win"
+          if @words.tries == MAX_TRIES
+            print "Sorry - lucky guesses don't count!\n"
+            return "lucky"
+          else
+            return "win"
+          end
         else
           choice.tried = true
         end
@@ -269,4 +302,5 @@ game.add(7, 15)
 game.add(8, 15)
 game.add(9, 15)
 game.add(10, 15)
+game.add(10, 19)
 game.play
