@@ -53,7 +53,7 @@ class WordList
 
   def password
     @words.each do |word|
-      retun word if word.password?
+      return word if word.password?
     end
     nil
   end
@@ -83,7 +83,12 @@ end
 class WordMap
   def initialize
     @words = Hash.new {|hash,key| hash[key] = Array.new}
-    File.open("words.txt", "r") do |f|
+    load_file("words.txt")
+    load_file("/usr/share/dict/words")
+  end
+
+  def load_file(filename)
+    File.open(filename, "r") do |f|
       f.each do |line|
         line = line.chomp.downcase
         next unless line.length >= 4
@@ -145,10 +150,11 @@ class GameMenu
       print "#{prefix} #{word}\n"
     end
     print " r) RESET\n"
+    print " q) QUIT\n"
   end
 
   def map(c)
-    return c if c == "r"
+    return c if c == "r" || c == "q"
     c = c.to_i
     choice = 1
     @words.each do |word|
@@ -188,6 +194,9 @@ class GameLoop
       choice = menu.read_choice
       if choice == "r"
         @words.reset
+      elsif choice == "q"
+        print "#{@words.password} was the password\n"
+        return        
       else
         if choice.password?
           print "SUCCESS! #{choice} is the password!\n"
@@ -202,7 +211,7 @@ class GameLoop
 end
 
 wm = WordMap.new
-words = wm.random_words(8, 17)
+words = wm.random_words(8, 16)
 game = GameLoop.new(words)
 game.run
 
