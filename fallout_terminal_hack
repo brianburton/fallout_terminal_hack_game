@@ -84,13 +84,13 @@ class WordMap
   def initialize
     @words = Hash.new {|hash,key| hash[key] = Array.new}
     load_file("words.txt")
-    load_file("/usr/share/dict/words")
+#    load_file("/usr/share/dict/words")
   end
 
   def load_file(filename)
     File.open(filename, "r") do |f|
       f.each do |line|
-        line = line.chomp.downcase
+        line = line.chomp.upcase
         next unless line.length >= 4
         next unless line.length <= 10
         @words[line.length] << line
@@ -149,8 +149,8 @@ class GameMenu
       end
       print "#{prefix} #{word}\n"
     end
-    print " r) RESET\n"
-    print " q) QUIT\n"
+    print " r) reset\n"
+    print " q) quit\n"
   end
 
   def map(c)
@@ -168,7 +168,12 @@ class GameMenu
 
   def read_choice
     while true
-      print "#{4 - @words.tries} remaining: "
+      remaining = 4 - @words.tries
+      if remaining == 1
+        print "Last try: "
+      else
+        print "#{remaining} tries remaining: "
+      end
       choice = STDIN.readline.chomp
       if choice.length > 0
         mapped = map(choice)
@@ -196,24 +201,76 @@ class GameLoop
         @words.reset
       elsif choice == "q"
         print "#{@words.password} was the password\n"
-        return        
+        return "quit"
       else
         if choice.password?
-          print "SUCCESS! #{choice} is the password!\n"
-          return
+          print "Success! #{choice} is the password!\n"
+          return "win"
         else
           choice.tried = true
         end
       end
     end
-    print "FAILURE... #{@words.password} was the password.\n"
+    print "Failure... #{@words.password} was the password.\n"
+    return "loss"
   end
 end
 
-wm = WordMap.new
-words = wm.random_words(8, 16)
-game = GameLoop.new(words)
-game.run
+class Scenario
+  attr_reader :length, :num_words
+
+  def initialize(length, num_words)
+    @length = length
+    @num_words = num_words
+  end
+end
+
+class Game
+  attr_reader :scenarios, :completed
+
+  def initialize
+    @scenarios = Array.new
+    @word_map = WordMap.new
+  end
+
+  def add(length, num_words)
+    @scenarios << Scenario.new(length, num_words)
+  end
+
+  def play
+    completed = 0
+    while completed < @scenarios.length
+      print "\nCreating next word set..."
+      scenario = @scenarios[completed]
+      words = @word_map.random_words(scenario.length, scenario.num_words)
+      puts
+      loop = GameLoop.new(words)
+      result = loop.run
+      if result == "win"
+        completed += 1
+      elsif result == "quit"
+        return
+      end
+    end
+    print "\n\nWell done!  You have completed all the scenarios!\n"
+  end
+end
+
+game = Game.new
+game.add(4, 9)
+game.add(4, 12)
+game.add(5, 9)
+game.add(5, 14)
+game.add(6, 9)
+game.add(6, 15)
+game.add(7, 9)
+game.add(7, 15)
+game.add(8, 9)
+game.add(8, 15)
+game.add(10, 8)
+game.add(10, 9)
+game.add(10, 10)
+game.play
 
 #(4..8).each do |length|
 #  (5..12).each do |num_words|
