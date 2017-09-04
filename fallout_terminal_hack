@@ -27,10 +27,7 @@ class Word
   end
 
   def likeness_matches(others)
-    others.each do |w|
-      return false unless likeness_to(w) == w.likeness
-    end
-    return true
+    others.inject(true) { |a,w| a && likeness_to(w) == w.likeness }
   end
 
   def <=>(other)
@@ -58,18 +55,12 @@ class WordList
   end
 
   def password
-    @words.each do |word|
-      return word if word.password?
-    end
-    nil
+    @words.detect { |w| w.password? }
   end
 
   def playable?
     min_total = (0.5 + 0.5 * 0.5 * word_length) * length
-    total_likeness = 0.0
-    @words.each do |word|
-      total_likeness += word.likeness.to_f
-    end
+    total_likeness = @words.inject(0.0) { |s,w| s + w.likeness.to_f }
     return total_likeness >= min_total
   end
 
@@ -88,13 +79,13 @@ class WordList
   def hints
     already_tried = @words.select { |w| w.tried }
     return Array.new if already_tried.empty?
-    return @words.select { |w| w.likeness_matches(already_tried) && !w.tried }
+    return @words.select { |w| !w.tried && w.likeness_matches(already_tried) }
   end
 end
 
 class WordMap
   def initialize
-    @words = Hash.new {|hash,key| hash[key] = Array.new}
+    @words = Hash.new { |hash,key| hash[key] = Array.new }
     load_file("words.txt")
   end
 
@@ -131,7 +122,7 @@ class WordMap
           answer << Word.new(word, word_likeness)
         end
       end
-      words = WordList.new(answer.to_a.sort)
+      words = WordList.new(answer.to_a.shuffle)
       return words if words.playable?
     end
     raise "unable to find enough words with non-zero likeness"
@@ -169,10 +160,7 @@ class GameMenu
   end
 
   def map(c)
-    return c if c == "r" || c == "q"
-    if c == "h"
-      return @words.tries > 0 ? c : nil
-    end
+    return c if c == "r" || c == "q" || (c == "h" && @words.tries > 0)
     c = c.to_i
     choice = 1
     @words.each do |word|
