@@ -59,12 +59,12 @@ class WordList
   end
 
   def playable?
-    above_half_length = (word_length + 1) / 2
-    above_half_count = 0
+    min_total = (0.5 + 0.5 * 0.5 * word_length) * length
+    total_likeness = 0.0
     @words.each do |word|
-      above_half_count += 1 if word.likeness >= above_half_length
+      total_likeness += word.likeness.to_f
     end
-    return above_half_count.to_f >= (length.to_f / 4)
+    return total_likeness >= min_total
   end
 
   def tries
@@ -262,7 +262,7 @@ def dump_combinations
   (6..10).each do |length|
     (10..20).each do |num_words|
       puts "NEW: length=#{length} num_words=#{num_words}"
-      puts wm.random_words(length, num_words)
+      puts wm.random_words(length, num_words).words
     end
   end
   exit
@@ -278,6 +278,4 @@ game.add(7, 15)
 game.add(8, 15)
 game.add(9, 15)
 game.add(10, 15)
-#game.add(11, 19)
-#game.add(12, 20)
 game.play
