@@ -1,0 +1,6 @@
+Uses the following word lists:
+
+- [EOWL (EOWL-v1.1.2.zip)][http://dreamsteep.com/projects/98-software/53-the-english-open-word-list-eowl.html]
+- [Letterpress (Words-master.zip)][https://github.com/atebits/Words]
+
+The words from these are combined into words.txt.

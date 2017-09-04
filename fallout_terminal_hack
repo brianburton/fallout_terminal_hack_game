@@ -64,7 +64,7 @@ class WordList
     @words.each do |word|
       above_half_count += 1 if word.likeness >= above_half_length
     end
-    return above_half_count.to_f >= (length.to_f / 2.75)
+    return above_half_count.to_f >= (length.to_f / 4)
   end
 
   def tries
@@ -92,7 +92,7 @@ class WordMap
       f.each do |line|
         line = line.chomp.upcase
         next unless line.length >= 4
-        next unless line.length <= 10
+        next unless line.length <= 15
         @words[line.length] << line
       end
     end
@@ -109,11 +109,12 @@ class WordMap
   def random_words(length, num_words)
     all_words = @words[length]
     raise "insufficient words" if all_words.length < num_words
+    r = Random.new
     1.upto(1000000).each do |try_number|
       answer = Set.new
       pwd = nil
       while answer.length < num_words
-        word = all_words[rand(all_words.length)]
+        word = all_words[r.rand(all_words.length)]
         if pwd.nil?
           pwd = word
           answer << Word.new(word, length)
@@ -256,25 +257,27 @@ class Game
   end
 end
 
-game = Game.new
-game.add(4, 9)
-game.add(4, 12)
-game.add(5, 9)
-game.add(5, 14)
-game.add(6, 9)
-game.add(6, 15)
-game.add(7, 9)
-game.add(7, 15)
-game.add(8, 9)
-game.add(8, 15)
-game.add(10, 8)
-game.add(10, 9)
-game.add(10, 10)
-game.play
+def dump_combinations
+  wm = WordMap.new
+  (6..10).each do |length|
+    (10..20).each do |num_words|
+      puts "NEW: length=#{length} num_words=#{num_words}"
+      puts wm.random_words(length, num_words)
+    end
+  end
+  exit
+end
 
-#(4..8).each do |length|
-#  (5..12).each do |num_words|
-#    puts "NEW: length=#{length} num_words=#{num_words}"
-#    puts wm.random_words(length, num_words)
-#  end
-#end
+#dump_combinations
+
+game = Game.new
+game.add(4, 12)
+game.add(5, 13)
+game.add(6, 14)
+game.add(7, 15)
+game.add(8, 15)
+game.add(9, 15)
+game.add(10, 15)
+#game.add(11, 19)
+#game.add(12, 20)
+game.play
