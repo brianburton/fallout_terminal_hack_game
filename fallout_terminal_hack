@@ -213,7 +213,7 @@ class GameLoop
       else
         if choice.password?
           print "Success! #{choice} is the password!\n"
-          if @words.tries == MAX_TRIES
+          if @words.tries == 0
             print "Sorry - lucky guesses don't count!\n"
             return "lucky"
           else
