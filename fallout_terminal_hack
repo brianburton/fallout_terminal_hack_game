@@ -2,12 +2,7 @@
 
 require 'set'
 
-# Generate words
-# Loop
-  # display words (include likeness if tried)
-  # display tries remaining
-  # read word
-  # score word
+MAX_TRIES = 4
 
 class Word
   attr_reader :text, :likeness, :tried
@@ -99,11 +94,7 @@ class WordMap
   end
 
   def likeness(pwd, other)
-    answer = 0
-    (0...pwd.length).each do |i|
-      answer += 1 if pwd[i] == other[i]
-    end
-    return answer
+    (0...pwd.length).count { |i| pwd[i] == other[i] }
   end
 
   def random_words(length, num_words)
@@ -169,7 +160,7 @@ class GameMenu
 
   def read_choice
     while true
-      remaining = 4 - @words.tries
+      remaining = MAX_TRIES - @words.tries
       if remaining == 1
         print "Last try: "
       else
@@ -194,7 +185,7 @@ class GameLoop
   def run
     menu = GameMenu.new(@words)
     @words.reset
-    while @words.tries < 4
+    while @words.tries < MAX_TRIES
       puts
       menu.print_choices
       choice = menu.read_choice
