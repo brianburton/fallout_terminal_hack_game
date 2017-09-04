@@ -19,7 +19,7 @@ class Word
     @tried = true
   end
 
-  def is_password
+  def password?
     return text.length == likeness
   end
 
@@ -51,6 +51,13 @@ class WordList
     @words.length
   end
 
+  def password
+    @words.each do |word|
+      retun word if word.password?
+    end
+    nil
+  end
+
   def playable?
     above_half_length = (word_length + 1) / 2
     above_half_count = 0
@@ -61,17 +68,16 @@ class WordList
   end
 
   def tries
-    @words.sum { |w| w.tried ? 1 : 0 }
+    @words.count { |w| w.tried }
   end
 
   def reset
     @words.each { |w| w.tried = false }
   end
-end
 
-class Game
-  attr_reader :word_length, :num_words, :max_tries, :num_tries, :words
-
+  def each
+    @words.each { |w| yield w }
+  end
 end
 
 class WordMap
@@ -112,8 +118,8 @@ class WordMap
           answer << Word.new(word, word_likeness)
         end
       end
-      words = WordList.new(answer.to_a)
-      return answer.to_a.sort if words.words if words.playable?
+      words = WordList.new(answer.to_a.sort)
+      return words if words.playable?
     end
     raise "unable to find enough words with non-zero likeness"
   end
@@ -126,19 +132,19 @@ class GameMenu
     @words = words
   end
 
-  def print
+  def print_choices
     choice = 1
     @words.each do |word|
       prefix = ""
       if word.tried
-        prefix = "  "
+        prefix = "   "
       else
-        prefix = "#{choice})"
+        prefix = sprintf("%2d)", choice)
         choice += 1
       end
-      STDIO.print "#{prefix} #{word}\n"
+      print "#{prefix} #{word}\n"
     end
-    STDIO.print "r) RESTART\n"
+    print " r) RESET\n"
   end
 
   def map(c)
@@ -154,10 +160,10 @@ class GameMenu
     return nil
   end
 
-  def read
+  def read_choice
     while true
-      STDIO.print "#{4 - @words.tries} remaining: "
-      choice = STDIN.read_line.chomp
+      print "#{4 - @words.tries} remaining: "
+      choice = STDIN.readline.chomp
       if choice.length > 0
         mapped = map(choice)
         return mapped unless mapped.nil?
@@ -174,14 +180,35 @@ class GameLoop
   end
 
   def run
-    
+    menu = GameMenu.new(@words)
+    @words.reset
+    while @words.tries < 4
+      puts
+      menu.print_choices
+      choice = menu.read_choice
+      if choice == "r"
+        @words.reset
+      else
+        if choice.password?
+          print "SUCCESS! #{choice} is the password!\n"
+          return
+        else
+          choice.tried = true
+        end
+      end
+    end
+    print "FAILURE... #{@words.password} was the password.\n"
   end
 end
 
 wm = WordMap.new
-(4..8).each do |length|
-  (5..12).each do |num_words|
-    puts "NEW: length=#{length} num_words=#{num_words}"
-    puts wm.random_words(length, num_words)
-  end
-end
+words = wm.random_words(8, 17)
+game = GameLoop.new(words)
+game.run
+
+#(4..8).each do |length|
+#  (5..12).each do |num_words|
+#    puts "NEW: length=#{length} num_words=#{num_words}"
+#    puts wm.random_words(length, num_words)
+#  end
+#end
