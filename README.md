@@ -39,7 +39,7 @@ The number of letters in common (called `likeness` in the program) is based on c
 
 ### Choosing The First Word
 
-Before choosing your first word look at the list and see if there are any endings used in multiple words.  Common endings include `ING`, `ED`, `ERS, etc.  If there are pick one of the words containing this ending.  This has several advantages:
+Before choosing your first word look at the list and see if there are any endings used in multiple words.  Common endings include `ING`, `ED`, `ERS`, etc.  If there are pick one of the words containing this ending.  This has several advantages:
 
 - If the likeness is smaller than the length of the ending then you know that words with that ending are less likely to be the password.
 - If the likeness is at least as large as the length of the ending then you know that words with the ending are more likely to be the password.
